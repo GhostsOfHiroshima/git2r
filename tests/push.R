@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2019 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,14 +14,17 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Create 2 directories in tempdir
-path_bare <- tempfile(pattern="git2r-")
-path_repo <- tempfile(pattern="git2r-")
+path_bare <- tempfile(pattern = "git2r-")
+path_repo <- tempfile(pattern = "git2r-")
 
 dir.create(path_bare)
 dir.create(path_repo)
@@ -35,12 +38,13 @@ stopifnot(identical(is_bare(bare_repo), TRUE))
 stopifnot(identical(is_bare(repo), FALSE))
 
 ## Config repositories
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Add changes to repo
 writeLines("Hello world", con = file.path(path_repo, "test.txt"))
 add(repo, "test.txt")
 commit_1 <- commit(repo, "Commit message")
+branch_name <- branches(repo)[[1]]$name
 
 ## Check commit
 stopifnot(identical(commit_1$author$name, "Alice"))
@@ -50,23 +54,23 @@ stopifnot(identical(commits(repo)[[1]]$author$name, "Alice"))
 stopifnot(identical(commits(repo)[[1]]$author$email, "alice@example.org"))
 
 ## Check push arguments
-tools::assertError(push(repo, character(0), "refs/heads/master"))
-tools::assertError(push(repo, NA_character_, "refs/heads/master"))
-tools::assertError(push(repo, c("origin", "origin"), "refs/heads/master"))
+tools::assertError(push(repo, character(0), paste0("refs/heads/", branch_name)))
+tools::assertError(push(repo, NA_character_, paste0("refs/heads/", branch_name)))
+tools::assertError(push(repo, c("origin", "origin"), paste0("refs/heads/", branch_name)))
 tools::assertError(push(repo, "origin"))
 tools::assertError(push(repo, name = "origin"))
 push(repo, "origin", character(0))
 push(repo, "origin", NA_character_)
 push(repo, "origin", c(NA_character_, NA_character_))
-stopifnot(identical(reflog(repo, "refs/remotes/origin/master"),
+stopifnot(identical(reflog(repo, paste0("refs/remotes/origin/", branch_name)),
                     structure(list(), class = "git_reflog")))
 
 ## No tracking branch assigned to master
 tools::assertError(push(branches(repo)[[1]]))
 
 ## Push changes from repo to origin
-push(repo, "origin", "refs/heads/master")
-r <- reflog(repo, "refs/remotes/origin/master")
+push(repo, "origin", paste0("refs/heads/", branch_name))
+r <- reflog(repo, paste0("refs/remotes/origin/", branch_name))
 stopifnot(identical(length(r), 1L))
 r <- r[[1]]
 stopifnot(identical(sha(r), sha(commit_1)))
@@ -74,7 +78,7 @@ stopifnot(identical(r$message, "update by push"))
 stopifnot(identical(r$index, 0L))
 stopifnot(identical(r$committer$name, "Alice"))
 stopifnot(identical(r$committer$email, "alice@example.org"))
-stopifnot(identical(r$refname, "refs/remotes/origin/master"))
+stopifnot(identical(r$refname, paste0("refs/remotes/origin/", branch_name)))
 stopifnot(identical(r$repo$path, repo$path))
 push(branches(repo)[[1]])
 
@@ -104,11 +108,11 @@ stopifnot(!identical(commit_2$repo, bare_commit_2$repo))
 
 ## Check 'set_upstream'
 branch_set_upstream(repository_head(repo), NULL)
-push(repo, "origin", "refs/heads/master")
+push(repo, "origin", paste0("refs/heads/", branch_name))
 stopifnot(is.null(branch_get_upstream(repository_head(repo))))
-push(repo, "origin", "refs/heads/master", set_upstream = TRUE)
+push(repo, "origin", paste0("refs/heads/", branch_name), set_upstream = TRUE)
 stopifnot(!is.null(branch_get_upstream(repository_head(repo))))
 
 ## Cleanup
-unlink(path_bare, recursive=TRUE)
-unlink(path_repo, recursive=TRUE)
+unlink(path_bare, recursive = TRUE)
+unlink(path_repo, recursive = TRUE)

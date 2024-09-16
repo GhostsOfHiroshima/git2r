@@ -4,15 +4,19 @@
 \alias{content}
 \title{Content of blob}
 \usage{
-content(blob = NULL, split = TRUE)
+content(blob = NULL, split = TRUE, raw = FALSE)
 }
 \arguments{
 \item{blob}{The blob object.}
 
 \item{split}{Split blob content to text lines. Default TRUE.}
+
+\item{raw}{When \code{TRUE}, get the content of the blob as a raw
+vector, else as a character vector. Default is \code{FALSE}.}
 }
 \value{
-The content of the blob. NA_character_ if the blob is binary.
+The content of the blob. NA_character_ if the blob is
+    binary and \code{raw} is \code{FALSE}.
 }
 \description{
 Content of blob
@@ -25,7 +29,7 @@ dir.create(path)
 repo <- init(path)
 
 ## Create a user and commit a file
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 writeLines("Hello world!", file.path(path, "example.txt"))
 add(repo, "example.txt")
 commit(repo, "First commit message")

@@ -9,6 +9,11 @@ PKG_TAR=$(PKG_NAME)_$(PKG_VERSION).tar.gz
 install:
 	cd .. && R CMD INSTALL $(PKG_NAME)
 
+# Check visibility of C entry points
+check_visibility:
+	cd .. && R CMD INSTALL $(PKG_NAME)
+	nm -g src/git2r.so | grep " T " | grep 2 && exit 0 || exit 1
+
 # Build documentation with roxygen
 # 1) Remove old doc
 # 2) Generate documentation
@@ -25,13 +30,20 @@ pdf: roxygen
 # Build and check package
 check:
 	cd .. && R CMD build --no-build-vignettes $(PKG_NAME)
-	cd .. && _R_CHECK_CRAN_INCOMING_=FALSE NOT_CRAN=true \
+	cd .. && _R_CHECK_CRAN_INCOMING_=FALSE _R_CHECK_SYSTEM_CLOCK_=0 \
         R CMD check --as-cran --no-manual --no-vignettes \
         --no-build-vignettes --no-stop-on-test-error $(PKG_TAR)
 
 # Build and check package on R-hub
 rhub: clean check
 	cd .. && Rscript -e "rhub::check(path='$(PKG_TAR)', rhub::platforms()[['name']], show_status = FALSE)"
+
+# Build and check package on https://win-builder.r-project.org/
+.PHONY: winbuilder
+winbuilder: clean check
+	cd .. && curl -T $(PKG_TAR) ftp://win-builder.r-project.org/R-oldrelease/
+	cd .. && curl -T $(PKG_TAR) ftp://win-builder.r-project.org/R-release/
+	cd .. && curl -T $(PKG_TAR) ftp://win-builder.r-project.org/R-devel/
 
 # Check reverse dependencies
 #
@@ -115,31 +127,40 @@ valgrind:
 # 3) Build and check updated package 'make check'
 sync_libgit2:
 	-rm -f src/libgit2/deps/http-parser/*
-	-rm -f src/libgit2/deps/regex/*
+	-rm -f src/libgit2/deps/xdiff/*
 	-rm -rf src/libgit2/include
 	-rm -rf src/libgit2/src
 	-cp -f ../libgit2/deps/http-parser/* src/libgit2/deps/http-parser
-	-cp -f ../libgit2/deps/regex/* src/libgit2/deps/regex
+	-cp -f ../libgit2/deps/xdiff/* src/libgit2/deps/xdiff
 	-cp -r ../libgit2/include/ src/libgit2/include
 	-rm -f src/libgit2/include/git2/inttypes.h
 	-rm -f src/libgit2/include/git2/stdint.h
 	-cp -r ../libgit2/src/ src/libgit2/src
+	-rm -rf src/libgit2/src/cli
 	-rm -f src/libgit2/deps/http-parser/CMakeLists.txt
 	-rm -f src/libgit2/deps/regex/CMakeLists.txt
+	-rm -f src/libgit2/deps/xdiff/CMakeLists.txt
+	-rm -f src/libgit2/src/README.md
 	-rm -f src/libgit2/src/CMakeLists.txt
-	-rm -f src/libgit2/src/features.h.in
+	-rm -f src/libgit2/src/libgit2/CMakeLists.txt
+	-rm -f src/libgit2/src/libgit2/experimental.h.in
+	-rm -f src/libgit2/src/libgit2/git2.rc
+	-rm -f src/libgit2/src/util/CMakeLists.txt
+	-rm -f src/libgit2/src/util/git2_features.h.in
 	-rm -f src/libgit2/src/stransport_stream.c
-	-rm -f src/libgit2/src/hash/hash_common_crypto.h
-	-rm -f src/libgit2/src/hash/hash_generic.c
-	-rm -f src/libgit2/src/hash/hash_generic.h
-	-rm -f src/libgit2/src/hash/hash_mbedtls.c
-	-rm -f src/libgit2/src/hash/hash_mbedtls.h
-	-rm -f src/libgit2/src/hash/hash_win32.c
-	-rm -f src/libgit2/src/hash/hash_win32.h
-	-rm -f src/libgit2/src/transports/auth_negotiate.c
-	-rm -rf src/libgit2/src/win32
-	cd src/libgit2/deps/regex && patch -i ../../../../patches/regcomp-pass-R-CMD-check-git2r.patch
-	cd src/libgit2/deps/regex && patch -i ../../../../patches/regex-prefix-entry-points.patch
+	-rm -f src/libgit2/src/util/hash/builtin.c
+	-rm -f src/libgit2/src/util/hash/builtin.h
+	-rm -f src/libgit2/src/util/hash/common_crypto.c
+	-rm -f src/libgit2/src/util/hash/common_crypto.h
+	-rm -f src/libgit2/src/util/hash/sha1/generic.c
+	-rm -f src/libgit2/src/util/hash/sha1/generic.h
+	-rm -f src/libgit2/src/util/hash/mbedtls.c
+	-rm -f src/libgit2/src/util/hash/mbedtls.h
+	-rm -f src/libgit2/src/util/hash/win32.c
+	-rm -f src/libgit2/src/util/hash/win32.h
+	-rm -rf src/libgit2/src/util/hash/rfc6234
+	-rm -f src/libgit2/src/libgit2/transports/auth_negotiate.c
+	-rm -rf src/libgit2/src/util/win32
 	Rscript scripts/build_Makevars.R
 
 Makevars:

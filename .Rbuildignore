@@ -1,7 +1,5 @@
 ^README\.md$
 ^LICENSE$
-^\.travis\.yml$
-^travis-tool\.sh$
 ^aclocal\.m4$
 ^Makefile$
 ^README\.Rmd$
@@ -11,7 +9,6 @@
 ^revdep$
 ^scripts$
 ^CONTRIBUTING.md$
-^appveyor\.yml
 ^tools/README\.md$
 ^.*\.Rproj$
 ^\.Rproj\.user$
@@ -19,3 +16,4 @@
 ^.*\.a$
 ^confdefs\.h$
 ^\.covrignore$
+^\.github$

@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2019 The git2r contributors
+ *  Copyright (C) 2013-2020 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,6 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <R_ext/Visibility.h>
 #include <git2.h>
 
 #include "git2r_arg.h"
@@ -33,7 +34,11 @@
  * @param dest S3 class git_tree to initialize
  * @return void
  */
-void git2r_tree_init(const git_tree *source, SEXP repo, SEXP dest)
+void attribute_hidden
+git2r_tree_init(
+    const git_tree *source,
+    SEXP repo,
+    SEXP dest)
 {
     SEXP filemode, id, type, name;
     int *filemode_ptr;
@@ -94,7 +99,8 @@ typedef struct {
  * Callback for the tree traversal method.
  *
  */
-static int git2r_tree_walk_cb(
+static int
+git2r_tree_walk_cb(
     const char *root,
     const git_tree_entry *entry,
     void *payload)
@@ -102,8 +108,12 @@ static int git2r_tree_walk_cb(
     int error = 0;
     git2r_tree_walk_cb_data *p = (git2r_tree_walk_cb_data*)payload;
 
-    if (!p->recursive && *root)
+    if (p->recursive) {
+        if (git_tree_entry_type(entry) != GIT2R_OBJECT_BLOB)
+            return 0;
+    } else if (*root) {
         return 1;
+    }
 
     if (!Rf_isNull(p->list)) {
         char mode[23]; /* enums are int/32-bit, but this is enough for even a 64-bit int */
@@ -112,7 +122,7 @@ static int git2r_tree_walk_cb(
 
         /* mode */
         error = snprintf(mode, sizeof(mode), "%06o", git_tree_entry_filemode(entry));
-        if (error < 0 || error >= sizeof(mode)) {
+        if (error < 0 || (size_t)error >= sizeof(mode)) {
             error = -1;
             goto cleanup;
         }
@@ -164,7 +174,10 @@ static int git2r_tree_walk_cb(
  * @param recursive recurse into sub-trees.
  * @return A list with entries
  */
-SEXP git2r_tree_walk(SEXP tree, SEXP recursive)
+SEXP attribute_hidden
+git2r_tree_walk(
+    SEXP tree,
+    SEXP recursive)
 {
     int error, nprotect = 0;
     git_oid oid;

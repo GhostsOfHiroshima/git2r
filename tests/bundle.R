@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -18,14 +18,17 @@ library("git2r")
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(file.path(path, "bundle", "R"), recursive = TRUE)
 
 ## Initialize a repository
 repo <- init(file.path(path, "bundle"))
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a DESCRIPTION file
 writeLines(c(
@@ -34,7 +37,8 @@ writeLines(c(
     "Description: Bundle a bare repository of the code in the 'inst' folder.",
     "Version: 0.1",
     "License: GPL-2",
-    "Authors@R: person('Alice', role = c('aut', 'cre'), email = 'alice@example.org')"),
+    "Authors@R: person('Alice', role = c('aut', 'cre'),",
+    "                  email = 'alice@example.org')"),
     con = file.path(path, "bundle", "DESCRIPTION"))
 add(repo, file.path(path, "bundle", "DESCRIPTION"))
 commit(repo, "Add DESCRIPTION file")
@@ -52,4 +56,4 @@ bundle_r_package(repo)
 tools::assertError(bundle_r_package(repo))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,18 +14,21 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Initialize a temporary repository
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
-repo <- init(path)
+repo <- init(path, branch = "main")
 
 ## Create a user and commit a file
-config(repo, user.name="Author", user.email="author@example.org")
+config(repo, user.name = "Author", user.email = "author@example.org")
 writeLines(c("First line in file 1.", "Second line in file 1."),
            file.path(path, "example-1.txt"))
 add(repo, "example-1.txt")
@@ -46,7 +49,7 @@ writeLines(c("line First in file 1.", "Second line in file 1."),
 add(repo, "example-1.txt")
 commit(repo, "Third commit message")
 
-checkout(repo, "master")
+checkout(repo, "main")
 
 ## Update 'example-2.txt' (swap words in second line) and commit
 writeLines(c("First line in file 2.", "line Second in file 2."),
@@ -77,4 +80,4 @@ summary(last_commit(repo))
 stopifnot(!file.exists(file.path(path, ".git", "MERGE_HEAD")))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

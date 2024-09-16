@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2019 The git2r contributors
+ *  Copyright (C) 2013-2023 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,6 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <R_ext/Visibility.h>
 #include "git2r_arg.h"
 #include "git2r_blob.h"
 #include "git2r_deprecated.h"
@@ -27,9 +28,14 @@
  * Get content of a blob
  *
  * @param blob S3 class git_blob
+ * @param raw If true, return content as a RAWSXP vector, else as a
+ * STRSXP vector.
  * @return content
  */
-SEXP git2r_blob_content(SEXP blob)
+SEXP attribute_hidden
+git2r_blob_content(
+    SEXP blob,
+    SEXP raw)
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;
@@ -40,6 +46,8 @@ SEXP git2r_blob_content(SEXP blob)
 
     if (git2r_arg_check_blob(blob))
         git2r_error(__func__, NULL, "'blob'", git2r_err_blob_arg);
+    if (git2r_arg_check_logical(raw))
+        git2r_error(__func__, NULL, "'raw'", git2r_err_logical_arg);
 
     repository = git2r_repository_open(git2r_get_list_element(blob, "repo"));
     if (!repository)
@@ -52,9 +60,22 @@ SEXP git2r_blob_content(SEXP blob)
     if (error)
         goto cleanup;
 
-    PROTECT(result = Rf_allocVector(STRSXP, 1));
-    nprotect++;
-    SET_STRING_ELT(result, 0, Rf_mkChar(git_blob_rawcontent(blob_obj)));
+    if (LOGICAL(raw)[0]) {
+        PROTECT(result = Rf_allocVector(RAWSXP, git_blob_rawsize(blob_obj)));
+        nprotect++;
+        memcpy(
+            RAW(result),
+            git_blob_rawcontent(blob_obj),
+            git_blob_rawsize(blob_obj));
+    } else {
+        PROTECT(result = Rf_allocVector(STRSXP, 1));
+        nprotect++;
+        if (git_blob_is_binary(blob_obj)) {
+            SET_STRING_ELT(result, 0, NA_STRING);
+        } else {
+            SET_STRING_ELT(result, 0, Rf_mkChar(git_blob_rawcontent(blob_obj)));
+        }
+    }
 
 cleanup:
     git_blob_free(blob_obj);
@@ -77,7 +98,10 @@ cleanup:
  * @param path The file from which the blob will be created.
  * @return list of S3 class git_blob objects
  */
-SEXP git2r_blob_create_fromdisk(SEXP repo, SEXP path)
+SEXP attribute_hidden
+git2r_blob_create_fromdisk(
+    SEXP repo,
+    SEXP path)
 {
     SEXP result = R_NilValue;
     int error = 0, nprotect = 0;
@@ -100,7 +124,7 @@ SEXP git2r_blob_create_fromdisk(SEXP repo, SEXP path)
             git_blob *blob = NULL;
             SEXP item;
 
-            error = git_blob_create_fromdisk(
+            error = GIT2R_BLOB_CREATE_FROM_DISK(
                 &oid,
                 repository,
                 CHAR(STRING_ELT(path, i)));
@@ -144,7 +168,10 @@ cleanup:
  * created, relative to the repository's working dir.
  * @return list of S3 class git_blob objects
  */
-SEXP git2r_blob_create_fromworkdir(SEXP repo, SEXP relative_path)
+SEXP attribute_hidden
+git2r_blob_create_fromworkdir(
+    SEXP repo,
+    SEXP relative_path)
 {
     SEXP result = R_NilValue;
     int error = 0, nprotect = 0;
@@ -167,7 +194,7 @@ SEXP git2r_blob_create_fromworkdir(SEXP repo, SEXP relative_path)
             git_blob *blob = NULL;
             SEXP item;
 
-            error = git_blob_create_fromworkdir(
+            error = GIT2R_BLOB_CREATE_FROM_WORKDIR(
                 &oid,
                 repository,
                 CHAR(STRING_ELT(relative_path, i)));
@@ -207,7 +234,11 @@ cleanup:
  * @param dest S3 class git_blob to initialize
  * @return void
  */
-void git2r_blob_init(const git_blob *source, SEXP repo, SEXP dest)
+void attribute_hidden
+git2r_blob_init(
+    const git_blob *source,
+    SEXP repo,
+    SEXP dest)
 {
     const git_oid *oid;
     char sha[GIT_OID_HEXSZ + 1];
@@ -224,7 +255,9 @@ void git2r_blob_init(const git_blob *source, SEXP repo, SEXP dest)
  * @param blob S3 class git_blob
  * @return TRUE if binary data, FALSE if not
  */
-SEXP git2r_blob_is_binary(SEXP blob)
+SEXP attribute_hidden
+git2r_blob_is_binary(
+    SEXP blob)
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;
@@ -273,7 +306,9 @@ cleanup:
  * @param blob S3 class git_blob
  * @return size
  */
-SEXP git2r_blob_rawsize(SEXP blob)
+SEXP attribute_hidden
+git2r_blob_rawsize(
+    SEXP blob)
 {
     int error;
     SEXP sha;

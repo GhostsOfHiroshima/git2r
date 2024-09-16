@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -16,7 +16,9 @@
 
 ##' git2r: R bindings to the libgit2 library
 ##'
+##' git2r: R bindings to the libgit2 library.
 ##' @docType package
+##' @aliases git2r-package
 ##' @name git2r
 ##' @useDynLib git2r, .registration=TRUE
 NULL

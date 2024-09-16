@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/ropensci/git2r.svg?branch=master)](https://travis-ci.org/ropensci/git2r)
-[![Build status](https://ci.appveyor.com/api/projects/status/h2vunr0lfqt8b45g/branch/master?svg=true)](https://ci.appveyor.com/project/karthik/git2r)
+[![R-CMD-check](https://github.com/ropensci/git2r/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ropensci/git2r/actions/workflows/R-CMD-check.yaml)
 [![CRAN status](http://www.r-pkg.org/badges/version/git2r)](http://cran.r-project.org/web/packages/git2r/index.html)
 [![CRAN RStudio mirror downloads](http://cranlogs.r-pkg.org/badges/last-month/git2r)](http://cran.r-project.org/web/packages/git2r/index.html)
 [![Coverage Status](https://coveralls.io/repos/github/ropensci/git2r/badge.svg?branch=master)](https://coveralls.io/github/ropensci/git2r?branch=master)
@@ -44,7 +43,7 @@ $ make install
 
 ### Repository
 
-The central object in the `git2r` package is the S4 class
+The central object in the `git2r` package is the S3 class
 `git_repository`. The following three methods can instantiate a
 repository; `init`, `repository` and `clone`.
 
@@ -220,7 +219,7 @@ commits(repo)[[1]] # Truncated here for readability
 ```coffee
 
 ## Get HEAD of repository
-head(repo)
+repository_head(repo)
 ```
 
 ```
@@ -230,7 +229,7 @@ head(repo)
 ```coffee
 
 ## Check if HEAD is head
-is_head(head(repo))
+is_head(repository_head(repo))
 ```
 
 ```
@@ -240,7 +239,7 @@ is_head(head(repo))
 ```coffee
 
 ## Check if HEAD is local
-is_local(head(repo))
+is_local(repository_head(repo))
 ```
 
 ```

@@ -30,13 +30,13 @@ struct git_odb_backend {
 
 	/* read and read_prefix each return to libgit2 a buffer which
 	 * will be freed later. The buffer should be allocated using
-	 * the function git_odb_backend_malloc to ensure that it can
-	 * be safely freed later. */
+	 * the function git_odb_backend_data_alloc to ensure that libgit2
+	 * can safely free it later. */
 	int GIT_CALLBACK(read)(
 		void **, size_t *, git_object_t *, git_odb_backend *, const git_oid *);
 
 	/* To find a unique object given a prefix of its oid.  The oid given
-	 * must be so that the remaining (GIT_OID_HEXSZ - len)*4 bits are 0s.
+	 * must be so that the remaining (GIT_OID_SHA1_HEXSIZE - len)*4 bits are 0s.
 	 */
 	int GIT_CALLBACK(read_prefix)(
 		git_oid *, void **, size_t *, git_object_t *,
@@ -53,7 +53,7 @@ struct git_odb_backend {
 		git_odb_backend *, const git_oid *, const void *, size_t, git_object_t);
 
 	int GIT_CALLBACK(writestream)(
-		git_odb_stream **, git_odb_backend *, git_off_t, git_object_t);
+		git_odb_stream **, git_odb_backend *, git_object_size_t, git_object_t);
 
 	int GIT_CALLBACK(readstream)(
 		git_odb_stream **, size_t *, git_object_t *,
@@ -69,11 +69,8 @@ struct git_odb_backend {
 	 * If the backend implements a refreshing mechanism, it should be exposed
 	 * through this endpoint. Each call to `git_odb_refresh()` will invoke it.
 	 *
-	 * However, the backend implementation should try to stay up-to-date as much
-	 * as possible by itself as libgit2 will not automatically invoke
-	 * `git_odb_refresh()`. For instance, a potential strategy for the backend
-	 * implementation to achieve this could be to internally invoke this
-	 * endpoint on failed lookups (ie. `exists()`, `read()`, `read_header()`).
+	 * The odb layer will automatically call this when needed on failed
+	 * lookups (ie. `exists()`, `read()`, `read_header()`).
 	 */
 	int GIT_CALLBACK(refresh)(git_odb_backend *);
 
@@ -82,7 +79,14 @@ struct git_odb_backend {
 
 	int GIT_CALLBACK(writepack)(
 		git_odb_writepack **, git_odb_backend *, git_odb *odb,
-		git_transfer_progress_cb progress_cb, void *progress_payload);
+		git_indexer_progress_cb progress_cb, void *progress_payload);
+
+	/**
+	 * If the backend supports pack files, this will create a
+	 * `multi-pack-index` file which will contain an index of all objects
+	 * across all the `.pack` files.
+	 */
+	int GIT_CALLBACK(writemidx)(git_odb_backend *);
 
 	/**
 	 * "Freshens" an already existing object, updating its last-used
@@ -117,7 +121,51 @@ GIT_EXTERN(int) git_odb_init_backend(
 	git_odb_backend *backend,
 	unsigned int version);
 
+/**
+ * Allocate data for an ODB object.  Custom ODB backends may use this
+ * to provide data back to the ODB from their read function.  This
+ * memory should not be freed once it is returned to libgit2.  If a
+ * custom ODB uses this function but encounters an error and does not
+ * return this data to libgit2, then they should use the corresponding
+ * git_odb_backend_data_free function.
+ *
+ * @param backend the ODB backend that is allocating this memory
+ * @param len the number of bytes to allocate
+ * @return the allocated buffer on success or NULL if out of memory
+ */
+GIT_EXTERN(void *) git_odb_backend_data_alloc(git_odb_backend *backend, size_t len);
+
+/**
+ * Frees custom allocated ODB data.  This should only be called when
+ * memory allocated using git_odb_backend_data_alloc is not returned
+ * to libgit2 because the backend encountered an error in the read
+ * function after allocation and did not return this data to libgit2.
+ *
+ * @param backend the ODB backend that is freeing this memory
+ * @param data the buffer to free
+ */
+GIT_EXTERN(void) git_odb_backend_data_free(git_odb_backend *backend, void *data);
+
+
+/*
+ * Users can avoid deprecated functions by defining `GIT_DEPRECATE_HARD`.
+ */
+#ifndef GIT_DEPRECATE_HARD
+
+/**
+ * Allocate memory for an ODB object from a custom backend.  This is
+ * an alias of `git_odb_backend_data_alloc` and is preserved for
+ * backward compatibility.
+ *
+ * This function is deprecated, but there is no plan to remove this
+ * function at this time.
+ *
+ * @deprecated git_odb_backend_data_alloc
+ * @see git_odb_backend_data_alloc
+ */
 GIT_EXTERN(void *) git_odb_backend_malloc(git_odb_backend *backend, size_t len);
+
+#endif
 
 GIT_END_DECL
 

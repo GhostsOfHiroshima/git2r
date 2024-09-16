@@ -24,12 +24,7 @@
  *
  */
 
-#include <R.h>
-#include <Rinternals.h>
-#include <R_ext/Rdynload.h>
-
-#include <git2.h>
-
+#include "git2r_arg.h"
 #include "git2r_blame.h"
 #include "git2r_blob.h"
 #include "git2r_branch.h"
@@ -59,13 +54,14 @@
 #include "git2r_status.h"
 #include "git2r_tag.h"
 #include "git2r_tree.h"
+#include <R_ext/Rdynload.h>
 
 #define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
 
 static const R_CallMethodDef callMethods[] =
 {
     CALLDEF(git2r_blame_file, 2),
-    CALLDEF(git2r_blob_content, 1),
+    CALLDEF(git2r_blob_content, 2),
     CALLDEF(git2r_blob_create_fromdisk, 2),
     CALLDEF(git2r_blob_create_fromworkdir, 2),
     CALLDEF(git2r_blob_is_binary, 1),
@@ -129,7 +125,7 @@ static const R_CallMethodDef callMethods[] =
     CALLDEF(git2r_repository_fetch_heads, 1),
     CALLDEF(git2r_repository_head, 1),
     CALLDEF(git2r_repository_head_detached, 1),
-    CALLDEF(git2r_repository_init, 2),
+    CALLDEF(git2r_repository_init, 3),
     CALLDEF(git2r_repository_is_bare, 1),
     CALLDEF(git2r_repository_is_empty, 1),
     CALLDEF(git2r_repository_is_shallow, 1),
@@ -141,7 +137,7 @@ static const R_CallMethodDef callMethods[] =
     CALLDEF(git2r_revparse_single, 2),
     CALLDEF(git2r_revwalk_contributions, 4),
     CALLDEF(git2r_revwalk_list, 6),
-    CALLDEF(git2r_revwalk_list2, 6),
+    CALLDEF(git2r_revwalk_list2, 7),
     CALLDEF(git2r_signature_default, 1),
     CALLDEF(git2r_ssl_cert_locations, 2),
     CALLDEF(git2r_stash_apply, 2),
@@ -181,5 +177,6 @@ R_init_git2r(DllInfo *info)
 void
 R_unload_git2r(DllInfo *info)
 {
+    GIT2R_UNUSED(info);
     git_libgit2_shutdown();
 }

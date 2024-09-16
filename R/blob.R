@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -49,7 +49,8 @@
 ##' temp_file_2 <- tempfile()
 ##' writeLines("Hello, world!", temp_file_1)
 ##' writeLines("test content", temp_file_2)
-##' blob_list_2 <- blob_create(repo, c(temp_file_1, temp_file_2), relative = FALSE)
+##' blob_list_2 <- blob_create(repo, c(temp_file_1, temp_file_2),
+##'                            relative = FALSE)
 ##' }
 blob_create <- function(repo = ".", path = NULL, relative = TRUE) {
     repo <- lookup_repository(repo)
@@ -63,7 +64,10 @@ blob_create <- function(repo = ".", path = NULL, relative = TRUE) {
 ##'
 ##' @param blob The blob object.
 ##' @param split Split blob content to text lines. Default TRUE.
-##' @return The content of the blob. NA_character_ if the blob is binary.
+##' @param raw When \code{TRUE}, get the content of the blob as a raw
+##'     vector, else as a character vector. Default is \code{FALSE}.
+##' @return The content of the blob. NA_character_ if the blob is
+##'     binary and \code{raw} is \code{FALSE}.
 ##' @export
 ##' @examples
 ##' \dontrun{
@@ -73,7 +77,7 @@ blob_create <- function(repo = ".", path = NULL, relative = TRUE) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
@@ -81,14 +85,13 @@ blob_create <- function(repo = ".", path = NULL, relative = TRUE) {
 ##' ## Display content of blob.
 ##' content(tree(commits(repo)[[1]])["example.txt"])
 ##' }
-content <- function(blob = NULL, split = TRUE) {
-    if (is_binary(blob))
-        return(NA_character_)
-
-    ret <- .Call(git2r_blob_content, blob)
+content <- function(blob = NULL, split = TRUE, raw = FALSE) {
+    result <- .Call(git2r_blob_content, blob, raw)
+    if (isTRUE(raw))
+        return(result)
     if (isTRUE(split))
-        ret <- strsplit(ret, "\n")[[1]]
-    ret
+        result <- strsplit(result, "\n")[[1]]
+    result
 }
 
 ##' Determine the sha from a blob string
@@ -148,7 +151,7 @@ hashfile <- function(path = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -189,7 +192,7 @@ is_binary <- function(blob = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -218,7 +221,7 @@ is_blob <- function(object) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))

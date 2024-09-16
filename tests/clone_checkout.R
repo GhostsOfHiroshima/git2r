@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -18,16 +18,19 @@ library("git2r")
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Create 2 directories in tempdir
-path_src <- tempfile(pattern="git2r-")
-path_tgt <- tempfile(pattern="git2r-")
+path_src <- tempfile(pattern = "git2r-")
+path_tgt <- tempfile(pattern = "git2r-")
 dir.create(path_tgt)
 dir.create(path_src)
 
 ## Initialize a repository
 repo_src <- init(path_src)
-config(repo_src, user.name="Alice", user.email="alice@example.org")
+config(repo_src, user.name = "Alice", user.email = "alice@example.org")
 
 ## Add commit to repo
 filename <- "test.txt"
@@ -60,5 +63,5 @@ stopifnot(identical(commit_src$message, commit_tgt$message))
 stopifnot(!identical(commit_src$repo, commit_tgt$repo))
 
 ## Cleanup
-unlink(path_tgt, recursive=TRUE)
-unlink(path_src, recursive=TRUE)
+unlink(path_tgt, recursive = TRUE)
+unlink(path_src, recursive = TRUE)

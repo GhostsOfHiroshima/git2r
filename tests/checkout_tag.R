@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,22 +14,25 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create first commit
 writeLines("Hello world!", file.path(path, "test-1.txt"))
-add(repo, 'test-1.txt')
+add(repo, "test-1.txt")
 commit_1 <- commit(repo, "First commit message")
 tag_1 <- tag(repo, "Tag1", "First tag message")
 
@@ -38,7 +41,7 @@ checkout(repo, "dev", create = TRUE)
 
 ## Create second commit
 writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test-2.txt"))
-add(repo, 'test-2.txt')
+add(repo, "test-2.txt")
 commit_2 <- commit(repo, "Second commit message")
 tag_2 <- tag(repo, "Tag2", "Second tag message")
 
@@ -58,4 +61,4 @@ checkout(repo, "Tag1")
 stopifnot(identical(list.files(path), "test-1.txt"))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

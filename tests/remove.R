@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2023 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -18,17 +18,20 @@ library("git2r")
 
 ## For debugging
 sessionInfo()
+libgit2_version()
+libgit2_features()
+
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Add files
-invisible(lapply(file.path(path, letters[1:3]), writeLines, text = ""))
+invisible(lapply(file.path(path, letters[1:4]), writeLines, text = ""))
 add(repo, letters)
 commit(repo, "init")
 
@@ -37,7 +40,10 @@ rm_file(repo, letters[1])
 commit(repo, "remove")
 
 ## Remove two files. Don't raise warnings
-tryCatch(rm_file(repo, letters[2:3]), warning = function(w) {stop(w)})
+withCallingHandlers(rm_file(repo, letters[2:3]), warning = function(w) stop(w))
+
+## Remove one file using the absolute path to the file.
+rm_file(repo, file.path(path, letters[4]))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

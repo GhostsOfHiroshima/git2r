@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2019 The git2r contributors
+ *  Copyright (C) 2013-2020 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,6 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <R_ext/Visibility.h>
 #include <git2.h>
 
 #include "git2r_arg.h"
@@ -36,7 +37,9 @@
  * @param repo S3 class git_repository
  * @return a git_repository pointer on success else NULL
  */
-git_repository* git2r_repository_open(SEXP repo)
+attribute_hidden git_repository*
+git2r_repository_open(
+    SEXP repo)
 {
     int error;
     SEXP path;
@@ -81,7 +84,8 @@ typedef struct {
  * @param is_merge Is head for merge.
  * @return 0
  */
-static int git2r_repository_fetchhead_foreach_cb(
+static int
+git2r_repository_fetchhead_foreach_cb(
     const char *ref_name,
     const char *remote_url,
     const git_oid *oid,
@@ -143,7 +147,9 @@ static int git2r_repository_fetchhead_foreach_cb(
  * @return list with the S3 class git_fetch_head entries. R_NilValue
  * if there is no FETCH_HEAD file.
  */
-SEXP git2r_repository_fetch_heads(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_fetch_heads(
+    SEXP repo)
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;
@@ -196,7 +202,9 @@ cleanup:
  * git_branch if not a detached head. S3 class git_commit if detached
  * head
  */
-SEXP git2r_repository_head(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_head(
+    SEXP repo)
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;
@@ -260,21 +268,35 @@ cleanup:
  * is created at the pointed path. If FALSE, provided path will be
  * considered as the working directory into which the .git directory
  * will be created.
+ * @param branch Use the specified name for the initial branch in the
+ * newly created repository. If NULL, fall back to the default name.
  * @return R_NilValue
  */
-SEXP git2r_repository_init(SEXP path, SEXP bare)
+SEXP attribute_hidden
+git2r_repository_init(
+    SEXP path,
+    SEXP bare,
+    SEXP branch)
 {
     int error;
     git_repository *repository = NULL;
+    git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
 
     if (git2r_arg_check_string(path))
         git2r_error(__func__, NULL, "'path'", git2r_err_string_arg);
     if (git2r_arg_check_logical(bare))
         git2r_error(__func__, NULL, "'bare'", git2r_err_logical_arg);
+    if (!Rf_isNull(branch) && git2r_arg_check_string(branch))
+        git2r_error(__func__, NULL, "'branch'", git2r_err_string_arg);
 
-    error = git_repository_init(&repository,
-                                CHAR(STRING_ELT(path, 0)),
-                                LOGICAL(bare)[0]);
+    if (LOGICAL(bare)[0])
+        opts.flags |= GIT_REPOSITORY_INIT_BARE;
+    if (!Rf_isNull(branch))
+        opts.initial_head = CHAR(STRING_ELT(branch, 0));
+
+    error = git_repository_init_ext(&repository,
+                                    CHAR(STRING_ELT(path, 0)),
+                                    &opts);
     if (error)
         git2r_error(__func__, NULL, git2r_err_repo_init, NULL);
 
@@ -289,7 +311,9 @@ SEXP git2r_repository_init(SEXP path, SEXP bare)
  * @param repo S3 class git_repository
  * @return TRUE if bare else FALSE
  */
-SEXP git2r_repository_is_bare(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_is_bare(
+    SEXP repo)
 {
     int is_bare;
     git_repository *repository;
@@ -311,7 +335,9 @@ SEXP git2r_repository_is_bare(SEXP repo)
  * @param repo S3 class git_repository
  * @return TRUE if shallow else FALSE
  */
-SEXP git2r_repository_is_shallow(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_is_shallow(
+    SEXP repo)
 {
     int is_shallow;
     git_repository *repository;
@@ -333,7 +359,9 @@ SEXP git2r_repository_is_shallow(SEXP repo)
  * @param repo S3 class git_repository
  * @return TRUE if detached else FALSE
  */
-SEXP git2r_repository_head_detached(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_head_detached(
+    SEXP repo)
 {
     int head_detached;
     git_repository *repository;
@@ -355,7 +383,9 @@ SEXP git2r_repository_head_detached(SEXP repo)
  * @param repo S3 class git_repository
  * @return TRUE if empty else FALSE
  */
-SEXP git2r_repository_is_empty(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_is_empty(
+    SEXP repo)
 {
     int is_empty;
     git_repository *repository;
@@ -377,7 +407,9 @@ SEXP git2r_repository_is_empty(SEXP repo)
  * @param path The path to the potential repository
  * @return TRUE if the repository can be opened else FALSE
  */
-SEXP git2r_repository_can_open(SEXP path)
+SEXP attribute_hidden
+git2r_repository_can_open(
+    SEXP path)
 {
     int error;
     git_repository *repository = NULL;
@@ -400,7 +432,10 @@ SEXP git2r_repository_can_open(SEXP path)
  * @param ref_name Canonical name of the reference the HEAD should point at
  * @return R_NilValue
  */
-SEXP git2r_repository_set_head(SEXP repo, SEXP ref_name)
+SEXP attribute_hidden
+git2r_repository_set_head(
+    SEXP repo,
+    SEXP ref_name)
 {
     int error;
     git_repository *repository = NULL;
@@ -430,7 +465,9 @@ SEXP git2r_repository_set_head(SEXP repo, SEXP ref_name)
  * @param commit S3 class git_commit
  * @return R_NilValue
  */
-SEXP git2r_repository_set_head_detached(SEXP commit)
+SEXP attribute_hidden
+git2r_repository_set_head_detached(
+    SEXP commit)
 {
     int error;
     SEXP sha;
@@ -475,7 +512,9 @@ cleanup:
  * @return R_NilValue if bare repository, else character vector
  * of length one with path.
  */
-SEXP git2r_repository_workdir(SEXP repo)
+SEXP attribute_hidden
+git2r_repository_workdir(
+    SEXP repo)
 {
     int nprotect = 0;
     SEXP result = R_NilValue;
@@ -509,7 +548,10 @@ SEXP git2r_repository_workdir(SEXP repo)
  * a character vector of length one with path to repository's git dir
  * e.g. /path/to/my/repo/.git
  */
-SEXP git2r_repository_discover(SEXP path, SEXP ceiling)
+SEXP attribute_hidden
+git2r_repository_discover(
+    SEXP path,
+    SEXP ceiling)
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;

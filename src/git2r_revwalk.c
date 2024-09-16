@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2019 The git2r contributors
+ *  Copyright (C) 2013-2021 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,6 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <R_ext/Visibility.h>
 #include <git2.h>
 
 #include "git2r_arg.h"
@@ -34,7 +35,10 @@
  * output. Use max_n < 0 for unlimited number of commits.
  * @return The number of revisions
  */
-static int git2r_revwalk_count(git_revwalk *walker, int max_n)
+static int
+git2r_revwalk_count(
+    git_revwalk *walker,
+    int max_n)
 {
     int n = 0;
     git_oid oid;
@@ -51,7 +55,8 @@ static int git2r_revwalk_count(git_revwalk *walker, int max_n)
 
 /* Helper to find how many files in a commit changed from its nth
  * parent. */
-static int git2r_match_with_parent(
+static int
+git2r_match_with_parent(
     int *out,
     git_commit *commit,
     unsigned int i,
@@ -96,7 +101,8 @@ cleanup:
  * output. Use max_n < 0 for unlimited number of commits.
  * @return list with S3 class git_commit objects
  */
-SEXP git2r_revwalk_list(
+SEXP attribute_hidden
+git2r_revwalk_list(
     SEXP repo,
     SEXP sha,
     SEXP topological,
@@ -213,18 +219,24 @@ cleanup:
  * @param time Sort the commits by commit time; can be combined with
  * topological.
  * @param reverse Sort the commits in reverse order
+ * @param max_n n The upper limit of the number of commits to
+ * output. Use max_n < 0 for unlimited number of commits.
  * @param path Only commits modifying this path are selected
  * @return list with S3 class git_commit objects
  */
-SEXP git2r_revwalk_list2 (
+SEXP attribute_hidden
+git2r_revwalk_list2 (
     SEXP repo,
     SEXP sha,
     SEXP topological,
     SEXP time,
     SEXP reverse,
+    SEXP max_n,
     SEXP path)
 {
-    int error = GIT_OK, nprotect = 0;
+    int i = 0;
+    int error = GIT_OK;
+    int nprotect = 0;
     SEXP result = R_NilValue;
     int n;
     unsigned int sort_mode = GIT_SORT_NONE;
@@ -232,7 +244,7 @@ SEXP git2r_revwalk_list2 (
     git_repository *repository = NULL;
     git_oid oid;
     git_diff_options diffopts = GIT_DIFF_OPTIONS_INIT;
-    git_pathspec     *ps      = NULL;
+    git_pathspec *ps = NULL;
 
     if (git2r_arg_check_sha(sha))
         git2r_error(__func__, NULL, "'sha'", git2r_err_sha_arg);
@@ -242,6 +254,8 @@ SEXP git2r_revwalk_list2 (
         git2r_error(__func__, NULL, "'time'", git2r_err_logical_arg);
     if (git2r_arg_check_logical(reverse))
         git2r_error(__func__, NULL, "'reverse'", git2r_err_logical_arg);
+    if (git2r_arg_check_integer(max_n))
+        git2r_error(__func__, NULL, "'max_n'", git2r_err_integer_arg);
     if (git2r_arg_check_string(path))
         git2r_error(__func__, NULL, "'path'", git2r_err_string_arg);
 
@@ -286,12 +300,11 @@ SEXP git2r_revwalk_list2 (
     if (error)
         goto cleanup;
 
-    /* Count number of revisions before creating the list. */
-    n = git2r_revwalk_count(walker, -1);
-
-    /* Create the list to store the result. */
-    PROTECT(result = Rf_allocVector(VECSXP, n));
-    nprotect++;
+    n = Rf_asInteger(max_n);
+    if (n < 0) {
+        /* Count number of revisions before creating the list. */
+        n = git2r_revwalk_count(walker, n);
+    }
 
     /* Restart the revwalker. */
     git_revwalk_reset(walker);
@@ -300,7 +313,11 @@ SEXP git2r_revwalk_list2 (
     if (error)
         goto cleanup;
 
-    for (int i = 0; i < n; i++) {
+    /* Create the list to store the result. */
+    PROTECT(result = Rf_allocVector(VECSXP, n));
+    nprotect++;
+
+    while (i < n) {
         git_commit *commit;
         SEXP item;
         git_oid oid;
@@ -324,8 +341,10 @@ SEXP git2r_revwalk_list2 (
         unmatched = parents;
         if (parents == 0) {
 	    git_tree *tree;
-	    if ((error = git_commit_tree(&tree, commit)) < 0)
+	    if ((error = git_commit_tree(&tree, commit)) < 0) {
+                git_commit_free(commit);
                 goto cleanup;
+            }
             error = git_pathspec_match_tree(
                 NULL, tree, GIT_PATHSPEC_NO_MATCH_ERROR, ps);
 	    git_tree_free(tree);
@@ -333,23 +352,32 @@ SEXP git2r_revwalk_list2 (
                 error = 0;
 	        unmatched = 1;
             } else if (error < 0) {
+                git_commit_free(commit);
                 goto cleanup;
             }
 	} else if (parents == 1) {
-            if ((error = git2r_match_with_parent(&match, commit, 0, &diffopts)) < 0)
+            if ((error = git2r_match_with_parent(&match, commit, 0, &diffopts)) < 0) {
+                git_commit_free(commit);
                 goto cleanup;
+            }
             unmatched = match ? 0 : 1;
 	} else {
-             for (unsigned int j = 0; j < parents; j++) {
-                 if ((error = git2r_match_with_parent(&match, commit, j, &diffopts)) < 0)
-                     goto cleanup;
-	         if (match && unmatched)
-		     unmatched--;
+            unsigned int j;
+
+            for (j = 0; j < parents; j++) {
+                if ((error = git2r_match_with_parent(&match, commit, j, &diffopts)) < 0) {
+                    git_commit_free(commit);
+                    goto cleanup;
+                }
+                if (match && unmatched)
+                    unmatched--;
             }
 	}
 
-        if (unmatched > 0)
+        if (unmatched > 0) {
+            git_commit_free(commit);
             continue;
+        }
 
         SET_VECTOR_ELT(
             result,
@@ -359,6 +387,7 @@ SEXP git2r_revwalk_list2 (
                      Rf_mkString(git2r_S3_class__git_commit));
         git2r_commit_init(commit, repo, item);
         git_commit_free(commit);
+        i++;
     }
 
 cleanup:
@@ -386,7 +415,8 @@ cleanup:
  * @param reverse Sort the commits in reverse order
  * @return list with S3 class git_commit objects
  */
-SEXP git2r_revwalk_contributions(
+SEXP attribute_hidden
+git2r_revwalk_contributions(
     SEXP repo,
     SEXP topological,
     SEXP time,

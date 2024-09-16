@@ -85,7 +85,7 @@ typedef enum {
 	GIT_SUBMODULE_STATUS_WD_MODIFIED       = (1u << 10),
 	GIT_SUBMODULE_STATUS_WD_INDEX_MODIFIED = (1u << 11),
 	GIT_SUBMODULE_STATUS_WD_WD_MODIFIED    = (1u << 12),
-	GIT_SUBMODULE_STATUS_WD_UNTRACKED      = (1u << 13),
+	GIT_SUBMODULE_STATUS_WD_UNTRACKED      = (1u << 13)
 } git_submodule_status_t;
 
 #define GIT_SUBMODULE_STATUS__IN_FLAGS		0x000Fu
@@ -122,7 +122,7 @@ typedef int GIT_CALLBACK(git_submodule_cb)(
  * Submodule update options structure
  *
  * Initialize with `GIT_SUBMODULE_UPDATE_OPTIONS_INIT`. Alternatively, you can
- * use `git_submodule_update_init_options`.
+ * use `git_submodule_update_options_init`.
  *
  */
 typedef struct git_submodule_update_options {
@@ -168,7 +168,7 @@ typedef struct git_submodule_update_options {
  * @param version The struct version; pass `GIT_SUBMODULE_UPDATE_OPTIONS_VERSION`.
  * @return Zero on success; -1 on failure.
  */
-GIT_EXTERN(int) git_submodule_update_init_options(
+GIT_EXTERN(int) git_submodule_update_options_init(
 	git_submodule_update_options *opts, unsigned int version);
 
 /**
@@ -181,7 +181,7 @@ GIT_EXTERN(int) git_submodule_update_init_options(
  * @param submodule Submodule object
  * @param init If the submodule is not initialized, setting this flag to true
  *        will initialize the submodule before updating. Otherwise, this will
- *        return an error if attempting to update an uninitialzed repository.
+ *        return an error if attempting to update an uninitialized repository.
  *        but setting this to true forces them to be updated.
  * @param options configuration options for the update.  If NULL, the
  *        function works as though GIT_SUBMODULE_UPDATE_OPTIONS_INIT was passed.
@@ -224,6 +224,16 @@ GIT_EXTERN(int) git_submodule_lookup(
 	const char *name);
 
 /**
+ * Create an in-memory copy of a submodule. The copy must be explicitly
+ * free'd or it will leak.
+ *
+ * @param out Pointer to store the copy of the submodule.
+ * @param source Original submodule to copy.
+ * @return 0
+ */
+GIT_EXTERN(int) git_submodule_dup(git_submodule **out, git_submodule *source);
+
+/**
  * Release a submodule
  *
  * @param submodule Submodule object
@@ -263,7 +273,8 @@ GIT_EXTERN(int) git_submodule_foreach(
  * from the working directory to the new repo.
  *
  * To fully emulate "git submodule add" call this function, then open the
- * submodule repo and perform the clone step as needed.  Lastly, call
+ * submodule repo and perform the clone step as needed (if you don't need
+ * anything custom see `git_submodule_add_clone()`). Lastly, call
  * `git_submodule_add_finalize()` to wrap up adding the new submodule and
  * .gitmodules to the index to be ready to commit.
  *
@@ -286,6 +297,22 @@ GIT_EXTERN(int) git_submodule_add_setup(
 	int use_gitlink);
 
 /**
+ * Perform the clone step for a newly created submodule.
+ *
+ * This performs the necessary `git_clone` to setup a newly-created submodule.
+ *
+ * @param out The newly created repository object. Optional.
+ * @param submodule The submodule currently waiting for its clone.
+ * @param opts The options to use.
+ *
+ * @return 0 on success, -1 on other errors (see git_clone).
+ */
+GIT_EXTERN(int) git_submodule_clone(
+	git_repository **out,
+	git_submodule *submodule,
+	const git_submodule_update_options *opts);
+
+/**
  * Resolve the setup of a new git submodule.
  *
  * This should be called on a submodule once you have called add setup
@@ -294,6 +321,7 @@ GIT_EXTERN(int) git_submodule_add_setup(
  * (but doesn't actually do the commit).
  *
  * @param submodule The submodule to finish adding.
+ * @return 0 or an error code.
  */
 GIT_EXTERN(int) git_submodule_add_finalize(git_submodule *submodule);
 
@@ -563,6 +591,9 @@ GIT_EXTERN(int) git_submodule_repo_init(
  * submodule config, acting like "git submodule sync".  This is useful if
  * you have altered the URL for the submodule (or it has been altered by a
  * fetch of upstream changes) and you need to update your local repo.
+ *
+ * @param submodule The submodule to copy.
+ * @return 0 or an error code.
  */
 GIT_EXTERN(int) git_submodule_sync(git_submodule *submodule);
 

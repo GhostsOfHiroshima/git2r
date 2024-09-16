@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2019 The git2r contributors
+ *  Copyright (C) 2013-2020 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,6 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <R_ext/Visibility.h>
 #include <git2.h>
 
 #include "git2r_arg.h"
@@ -33,8 +34,9 @@
  * structure
  * @return 0
  */
-static int git2r_clone_progress(
-    const git_transfer_progress *progress,
+static int
+git2r_clone_progress(
+    const GIT2R_INDEXER_PROGRESS *progress,
     void *payload)
 {
     int kbytes = progress->received_bytes / 1024;
@@ -77,7 +79,8 @@ static int git2r_clone_progress(
  * @param progress show progress
  * @return R_NilValue
  */
-SEXP git2r_clone(
+SEXP attribute_hidden
+git2r_clone(
     SEXP url,
     SEXP local_path,
     SEXP bare,

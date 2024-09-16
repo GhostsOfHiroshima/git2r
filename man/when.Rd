@@ -4,10 +4,24 @@
 \alias{when}
 \title{When}
 \usage{
-when(object)
+when(object, tz = "GMT", origin = "1970-01-01", usetz = TRUE)
 }
 \arguments{
 \item{object}{the \code{object} to extract the time slot from.}
+
+\item{tz}{a character string.  The time zone specification to be used
+    for the conversion, \emph{if one is required}.  System-specific (see
+    \link[base]{time zones}), but \code{""} is the current time zone, and
+    \code{"GMT"} is UTC (Universal Time, Coordinated).  Invalid values
+    are most commonly treated as UTC, on some platforms with a warning.}
+
+\item{origin}{a date-time object, or something which can be coerced by
+    \code{as.POSIXct(tz = "GMT")} to such an object.  Optional since \R
+    4.3.0, where the equivalent of \code{"1970-01-01"} is used.}
+
+\item{usetz}{logical.  Should the time zone abbreviation be appended
+    to the output?  This is used in printing times, and more reliable
+    than using \code{"\%Z"}.}
 }
 \value{
 A \code{character} vector of length one.
@@ -24,7 +38,7 @@ dir.create(path)
 repo <- init(path)
 
 ## Create a first user and commit a file
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 writeLines("Hello world!", file.path(path, "example.txt"))
 add(repo, "example.txt")
 commit(repo, "First commit message")
@@ -34,5 +48,9 @@ tag(repo, "Tagname", "Tag message")
 
 when(commits(repo)[[1]])
 when(tags(repo)[[1]])
+when(tags(repo)[[1]], tz = Sys.timezone())
 }
+}
+\seealso{
+\code{\link{git_time}}
 }
